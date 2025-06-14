@@ -1,0 +1,39 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# виртуальное окружение
+.venv/
+venv/
+env/
+ENV/
+
+# Poetry lock (если хочешь, чтобы lock оставался в репо, убери этот пункт)
+poetry.lock
+
+# IDE
+.vscode/
+.idea/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Env files and secret configs
+.env
+*.env
+config.yaml
+*.secret.yaml
+
+# Alembic versions
+alembic/versions/*.py
+
+# Pytest cache
+.pytest_cache/
+.cache/
+
+# Migrations (если решим не хранить версии в репо, а только через CI)
+migrations/
+
