@@ -62,7 +62,7 @@ services:
       RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/
       REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
     ports:
-      - "8080:8080"
+      - "8888:8080"
     volumes:
       - ./:/app
     depends_on:
@@ -73,8 +73,10 @@ services:
       rabbitmq:
         condition: service_healthy
     command: >
-      sh -c "alembic upgrade head &&
-             uvicorn delivery_service.main:app --host 0.0.0.0 --port 8080"
+      sh -c "echo '✅ Alembic миграции завершены' &&
+             alembic upgrade head &&
+             echo '🚀 Стартуем Uvicorn...' &&
+             uvicorn src.delivery_service.main:app --host 0.0.0.0 --port 8080"
 
 volumes:
   db_data:

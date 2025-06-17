@@ -25,8 +25,9 @@ class PackageRead(PackageBase):
     shipping_cost: Optional[Decimal]
     type: PackageTypeRead
 
-    class Config:
-        orm_mode = True
+    model_config = {
+        "from_attributes": True
+    }
 
 class PackageList(BaseModel):
     total: int

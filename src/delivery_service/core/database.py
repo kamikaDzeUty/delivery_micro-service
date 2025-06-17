@@ -4,7 +4,7 @@ from sqlalchemy.orm import sessionmaker
 from .config import settings
 
 engine = create_async_engine(
-    settings.database_url,
+    str(settings.database_url),
     future=True,
     echo=True,              # При необходимости можно выключить
 )
