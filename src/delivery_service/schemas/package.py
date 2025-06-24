@@ -11,14 +11,10 @@ class PackageBase(BaseModel):
     declared_value: Decimal
     type_id: UUID
 
+
 class PackageCreate(PackageBase):
     pass
 
-class PackageUpdate(BaseModel):
-    name: Optional[str] = None
-    weight: Optional[Decimal] = None
-    declared_value: Optional[Decimal] = None
-    type_id: Optional[UUID] = None
 
 class PackageRead(PackageBase):
     id: UUID
@@ -28,6 +24,7 @@ class PackageRead(PackageBase):
     model_config = {
         "from_attributes": True
     }
+
 
 class PackageList(BaseModel):
     total: int

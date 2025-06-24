@@ -8,3 +8,6 @@ class PackageTypeRead(BaseModel):
     model_config = {
         "from_attributes": True
     }
+
+class PackageTypeCreate(BaseModel):
+    name: str

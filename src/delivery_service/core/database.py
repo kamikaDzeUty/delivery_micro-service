@@ -1,21 +1,20 @@
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession
-from sqlalchemy.orm import sessionmaker
+from typing import AsyncGenerator
+
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sessionmaker
 
 from .config import settings
 
 engine = create_async_engine(
     str(settings.database_url),
-    future=True,
-    echo=True,              # При необходимости можно выключить
+    echo=True,
 )
 
-AsyncSessionLocal = sessionmaker(
+AsyncSessionLocal = async_sessionmaker(
     bind=engine,
-    class_=AsyncSession,
     expire_on_commit=False,
 )
 
-async def get_session() -> AsyncSession:
+async def get_session() -> AsyncGenerator[AsyncSession, None]:
     """
     FastAPI-зависимость. Даёт сессию и автоматически её закрывает.
     """

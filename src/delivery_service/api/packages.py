@@ -1,7 +1,7 @@
 from typing import Optional
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Path
+from fastapi import APIRouter, Depends, HTTPException, Query, Path, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.delivery_service.core.database import get_session
@@ -10,7 +10,6 @@ from src.delivery_service.services.package_service import PackageService
 from src.delivery_service.schemas.package import (
     PackageRead,
     PackageCreate,
-    PackageUpdate,
     PackageList,
 )
 
@@ -22,14 +21,14 @@ def get_package_service(session: AsyncSession = Depends(get_session)) -> Package
 
 @router.post("/", response_model=PackageRead, status_code=201)
 async def create_package(
-    payload: PackageCreate,
+    payload: PackageCreate = Body(...),
     service: PackageService = Depends(get_package_service),
 ) -> PackageRead:
     """
     Регистрирует новую посылку (без расчёта стоимости).
     """
     pkg = await service.create_package(payload)
-    return PackageRead.from_orm(pkg)
+    return PackageRead.model_validate(pkg)
 
 @router.post("/{pkg_id}/calculate", response_model=PackageRead)
 async def calculate_shipping_cost(
@@ -42,21 +41,28 @@ async def calculate_shipping_cost(
     pkg = await service.update_shipping_cost(pkg_id)
     if pkg is None:
         raise HTTPException(status_code=404, detail="Package not found")
-    return PackageRead.from_orm(pkg)
+    return PackageRead.model_validate(pkg)
 
 @router.get("/", response_model=PackageList)
 async def list_packages(
-    type_id: Optional[UUID] = Query(None),
-    has_cost: Optional[bool] = Query(None),
-    limit: int = Query(100, ge=1, le=1000),
-    offset: int = Query(0, ge=0),
-    service: PackageService = Depends(get_package_service),
+    type_id: Optional[UUID]    = Query(None, description="Фильтр по типу"),
+    calculated: Optional[bool] = Query(
+        None,
+        alias="calculated",
+        description="True — только с рассчитанной стоимостью; False — только без"
+    ),
+    limit: int = Query(100, ge=1, le=1000, description="Макс число записей"),
+    offset: int = Query(0, ge=0, description="Смещение для пагинации"),
+    service  = Depends(get_package_service),
 ) -> PackageList:
     """
-    Список посылок с фильтрацией и пагинацией.
+    Список посылок с пагинацией и фильтрацией по типу и наличию shipping_cost.
     """
     total, items = await service.list_packages(
-        type_id=type_id, has_cost=has_cost, limit=limit, offset=offset
+        type_id=type_id,
+        has_cost=calculated,
+        limit=limit,
+        offset=offset,
     )
     return PackageList(total=total, items=items)
 
@@ -71,28 +77,4 @@ async def get_package(
     pkg = await service.get_package(pkg_id)
     if pkg is None:
         raise HTTPException(status_code=404, detail="Package not found")
-    return PackageRead.from_orm(pkg)
-
-@router.put("/{pkg_id}", response_model=PackageRead)
-async def update_package(
-    pkg_id: UUID = Path(...),
-    payload: PackageUpdate = Depends(),
-    service: PackageService = Depends(get_package_service),
-) -> PackageRead:
-    """
-    Обновление полей посылки.
-    """
-    pkg = await service.update_package(pkg_id, payload)
-    if pkg is None:
-        raise HTTPException(status_code=404, detail="Package not found")
-    return PackageRead.from_orm(pkg)
-
-@router.delete("/{pkg_id}", status_code=204)
-async def delete_package(
-    pkg_id: UUID = Path(...),
-    service: PackageService = Depends(get_package_service),
-) -> None:
-    """
-    Удаление посылки.
-    """
-    await service.delete_package(pkg_id)
+    return PackageRead.model_validate(pkg)
