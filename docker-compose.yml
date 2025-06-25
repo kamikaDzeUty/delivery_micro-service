@@ -84,7 +84,11 @@ services:
     build: .
     command: >
       celery -A src.delivery_service.core.celery_app.celery_app
-      worker --loglevel=info --concurrency=2
+      worker
+      --loglevel=info
+      --concurrency=4
+      --prefetch-multiplier=1
+      --max-tasks-per-child=100
     env_file:
       - .env
     depends_on:

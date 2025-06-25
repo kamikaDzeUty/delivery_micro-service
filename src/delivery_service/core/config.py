@@ -5,7 +5,7 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     database_url: str
     redis_url: RedisDsn
-    cbr_api_url: HttpUrl
+    cbr_api_url: str
     rate_ttl_seconds: int
     rabbitmq_url: str
 

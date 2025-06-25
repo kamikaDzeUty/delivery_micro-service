@@ -7,7 +7,6 @@ from src.delivery_service.models.package import Package
 from src.delivery_service.repositories.package_repository import PackageRepository
 from src.delivery_service.schemas.package import PackageCreate
 from src.delivery_service.services.shipping_service import calculate_shipping_cost
-from src.delivery_service.tasks.recalc import recalc_shipping_cost
 
 class PackageService:
     def __init__(self, repo: PackageRepository):
@@ -17,6 +16,7 @@ class PackageService:
         """
         Создаёт новую посылку с shipping_cost=None.
         """
+        from src.delivery_service.tasks.recalc import recalc_shipping_cost
         payload = data.model_dump()
         pkg = Package(**payload, shipping_cost=None)
         pkg = await self.repo.create(pkg)

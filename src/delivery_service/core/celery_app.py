@@ -18,3 +18,5 @@ celery_app.conf.update(
     timezone="Europe/Moscow",
     enable_utc=True,
 )
+
+celery_app.conf.task_acks_late = True
