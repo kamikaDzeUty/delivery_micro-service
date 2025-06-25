@@ -21,7 +21,7 @@ RUN curl -sSL https://install.python-poetry.org | python3 - \
 
 # Копируем только манифесты и ставим prod-зависимости
 COPY pyproject.toml poetry.lock ./
-RUN poetry install --no-dev --no-ansi
+RUN poetry install --only main --no-ansi
 
 # Stage 2: финальный образ
 FROM python:3.13-slim

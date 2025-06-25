@@ -61,8 +61,8 @@ services:
       - .env
     environment:
       DATABASE_URL: ${DATABASE_URL}
-      RABBITMQ_URL: amqp://${RABBITMQ_USER}:${RABBITMQ_PASSWORD}@rabbitmq:5672/
-      REDIS_URL: redis://:${REDIS_PASSWORD}@redis:6379/0
+      RABBITMQ_URL: ${RABBITMQ_URL}
+      REDIS_URL: ${REDIS_URL}
     ports:
       - "8888:8080"
     volumes:
@@ -79,6 +79,17 @@ services:
              alembic upgrade head &&
              echo '🚀 Стартуем Uvicorn...' &&
              uvicorn src.delivery_service.main:app --host 0.0.0.0 --port 8080"
+
+  worker:
+    build: .
+    command: >
+      celery -A src.delivery_service.core.celery_app.celery_app
+      worker --loglevel=info --concurrency=2
+    env_file:
+      - .env
+    depends_on:
+      - rabbitmq
+      - db
 
 volumes:
   db_data:

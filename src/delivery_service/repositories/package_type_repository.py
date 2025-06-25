@@ -1,6 +1,5 @@
 # src/delivery_service/repositories/package_type_repository.py
-from uuid import UUID
-from typing import Optional, Sequence
+from typing import Sequence
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession

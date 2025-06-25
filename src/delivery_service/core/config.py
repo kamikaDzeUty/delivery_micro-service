@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     redis_url: RedisDsn
     cbr_api_url: HttpUrl
     rate_ttl_seconds: int
+    rabbitmq_url: str
 
     model_config = SettingsConfigDict(
         env_file=".env",

@@ -1,11 +1,13 @@
 # src/delivery_service/services/package_service.py
 import uuid
-from typing import Optional, Tuple
+from typing import Optional, Sequence
+
 
 from src.delivery_service.models.package import Package
 from src.delivery_service.repositories.package_repository import PackageRepository
 from src.delivery_service.schemas.package import PackageCreate
 from src.delivery_service.services.shipping_service import calculate_shipping_cost
+from src.delivery_service.tasks.recalc import recalc_shipping_cost
 
 class PackageService:
     def __init__(self, repo: PackageRepository):
@@ -17,7 +19,9 @@ class PackageService:
         """
         payload = data.model_dump()
         pkg = Package(**payload, shipping_cost=None)
-        return await self.repo.create(pkg)
+        pkg = await self.repo.create(pkg)
+        recalc_shipping_cost.delay(str(pkg.id))
+        return pkg
 
     async def get_package(self, pkg_id: uuid.UUID) -> Optional[Package]:
         """
@@ -32,7 +36,7 @@ class PackageService:
         has_cost: Optional[bool],
         limit: int,
         offset: int,
-    ) -> Tuple[int, list[Package]]:
+    ) -> tuple[int, Sequence[Package]]:
         """
         Список посылок с фильтрацией и пагинацией.
         Возвращает (total_count, items).
