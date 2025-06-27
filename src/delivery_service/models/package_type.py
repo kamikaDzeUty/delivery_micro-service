@@ -13,3 +13,6 @@ class PackageType(Base):
     name = Column(String(50), unique=True, nullable=False)
 
     packages = relationship("Package", back_populates="type")
+
+    def __repr__(self) -> str:
+        return f"<PackageType(id={self.id}, name='{self.name}')>"

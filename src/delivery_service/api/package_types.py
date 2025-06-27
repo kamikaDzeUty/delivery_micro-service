@@ -2,7 +2,7 @@ from typing import List, Sequence
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.delivery_service.core.database import get_session
+from src.delivery_service.core.dependencies import get_package_type_repository
 from src.delivery_service.models import PackageType
 from src.delivery_service.repositories.package_type_repository import PackageTypeRepository
 from src.delivery_service.schemas.package_type import PackageTypeRead, PackageTypeCreate
@@ -11,24 +11,24 @@ router = APIRouter(prefix="/package-types", tags=["package-types"])
 
 @router.get("/", response_model=List[PackageTypeRead])
 async def list_package_types(
-        session: AsyncSession = Depends(get_session)
-) -> Sequence[PackageType]:
+        repo: PackageTypeRepository = Depends(get_package_type_repository)
+) -> List[PackageTypeRead]:
     """
     Возвращает весь справочник типов посылок.
     """
-    repo = PackageTypeRepository(session)
-    return await repo.list()
+    package_types = await repo.list()
+    return [PackageTypeRead.model_validate(pt) for pt in package_types]
 
 @router.post("/", response_model=PackageTypeRead)
 async def create_package_type(
         payload: PackageTypeCreate,
-        session: AsyncSession = Depends(get_session)
-) -> PackageType:
+        repo: PackageTypeRepository = Depends(get_package_type_repository)
+) -> PackageTypeRead:
     """
     Создает новый тип посылки.
     """
-    repo = PackageTypeRepository(session)
-    return await repo.create(payload.name)
+    package_type = await repo.create(payload.name)
+    return PackageTypeRead.model_validate(package_type)
 
 
 

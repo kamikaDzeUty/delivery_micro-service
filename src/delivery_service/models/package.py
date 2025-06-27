@@ -17,3 +17,6 @@ class Package(Base):
 
     type_id = Column(UUID(as_uuid=True), ForeignKey("package_types.id"), nullable=False)
     type    = relationship("PackageType", back_populates="packages")
+
+    def __repr__(self) -> str:
+        return f"<Package(id={self.id}, name='{self.name}', weight={self.weight}, declared_value={self.declared_value}, shipping_cost={self.shipping_cost})>"

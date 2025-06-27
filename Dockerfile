@@ -1,5 +1,5 @@
 # Stage 1: сборка зависимостей
-FROM python:3.13-slim AS builder
+FROM python:3.12-slim AS builder
 
 WORKDIR /app
 
@@ -24,7 +24,7 @@ COPY pyproject.toml poetry.lock ./
 RUN poetry install --only main --no-ansi
 
 # Stage 2: финальный образ
-FROM python:3.13-slim
+FROM python:3.12-slim
 
 WORKDIR /app
 
@@ -34,7 +34,7 @@ RUN apt-get update \
  && rm -rf /var/lib/apt/lists/*
 
 # Копируем зависимости (site-packages) и скрипты (alembic, uvicorn и др.)
-COPY --from=builder /usr/local/lib/python3.13 /usr/local/lib/python3.13
+COPY --from=builder /usr/local/lib/python3.12 /usr/local/lib/python3.12
 COPY --from=builder /usr/local/bin /usr/local/bin
 
 # Копируем код приложения

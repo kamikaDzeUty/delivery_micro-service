@@ -1,6 +1,6 @@
 services:
   db:
-    image: postgres:17
+    image: postgres:16
     restart: always
     env_file:
       - .env
@@ -36,7 +36,7 @@ services:
       retries: 5
 
   rabbitmq:
-    image: rabbitmq:3.11-management-alpine
+    image: rabbitmq:3.12-management-alpine
     restart: always
     env_file:
       - .env
@@ -61,7 +61,7 @@ services:
       - .env
     environment:
       DATABASE_URL: ${DATABASE_URL}
-      RABBITMQ_URL: ${RABBITMQ_URL}
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL}
       REDIS_URL: ${REDIS_URL}
     ports:
       - "8888:8080"
@@ -78,22 +78,32 @@ services:
       sh -c "echo '✅ Alembic миграции завершены' &&
              alembic upgrade head &&
              echo '🚀 Стартуем Uvicorn...' &&
-             uvicorn src.delivery_service.main:app --host 0.0.0.0 --port 8080"
+             uvicorn src.delivery_service.main:app --host 0.0.0.0 --port 8080 --reload"
 
   worker:
     build: .
     command: >
-      celery -A src.delivery_service.core.celery_app.celery_app
-      worker
-      --loglevel=info
-      --concurrency=4
-      --prefetch-multiplier=1
-      --max-tasks-per-child=100
+      sh -c "echo '🔄 Ждем RabbitMQ...' && \
+             sleep 5 && \
+             echo '🚀 Запускаем Celery worker...' && \
+             celery -A src.delivery_service.core.celery_app.celery_app worker \
+                    --loglevel=info \
+                    --concurrency=4 \
+                    --prefetch-multiplier=1 \
+                    --max-tasks-per-child=1000"
     env_file:
       - .env
+    environment:
+      CELERY_BROKER_URL: ${CELERY_BROKER_URL}
+      DATABASE_URL: ${DATABASE_URL}
+      REDIS_URL: ${REDIS_URL}
     depends_on:
-      - rabbitmq
-      - db
+      rabbitmq:
+        condition: service_healthy
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
 volumes:
   db_data:

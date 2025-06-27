@@ -4,8 +4,7 @@ from uuid import UUID
 from fastapi import APIRouter, Depends, HTTPException, Query, Path, Body
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.delivery_service.core.database import get_session
-from src.delivery_service.repositories.package_repository import PackageRepository
+from src.delivery_service.core.dependencies import get_package_service
 from src.delivery_service.services.package_service import PackageService
 from src.delivery_service.schemas.package import (
     PackageRead,
@@ -15,17 +14,13 @@ from src.delivery_service.schemas.package import (
 
 router = APIRouter(prefix="/packages", tags=["packages"])
 
-def get_package_service(session: AsyncSession = Depends(get_session)) -> PackageService:
-    repo = PackageRepository(session)
-    return PackageService(repo)
-
 @router.post("/", response_model=PackageRead, status_code=201)
 async def create_package(
     payload: PackageCreate = Body(...),
     service: PackageService = Depends(get_package_service),
 ) -> PackageRead:
     """
-    Регистрирует новую посылку (без расчёта стоимости).
+    Регистрирует новую посылку и автоматически запускает расчет стоимости через Celery.
     """
     pkg = await service.create_package(payload)
     return PackageRead.model_validate(pkg)
@@ -36,12 +31,25 @@ async def calculate_shipping_cost(
     service: PackageService = Depends(get_package_service),
 ) -> PackageRead:
     """
-    Запускает расчёт стоимости для одной посылки.
+    Запускает расчёт стоимости для одной посылки (синхронно).
     """
     pkg = await service.update_shipping_cost(pkg_id)
     if pkg is None:
         raise HTTPException(status_code=404, detail="Package not found")
     return PackageRead.model_validate(pkg)
+
+@router.post("/recalculate-pending")
+async def recalculate_all_pending_packages(
+    service: PackageService = Depends(get_package_service),
+) -> dict:
+    """
+    Запускает пересчет стоимости для всех посылок без shipping_cost через Celery.
+    """
+    tasks_sent = await service.recalculate_all_pending()
+    return {
+        "message": f"Scheduled {tasks_sent} tasks for recalculation",
+        "tasks_sent": tasks_sent
+    }
 
 @router.get("/", response_model=PackageList)
 async def list_packages(
@@ -53,7 +61,7 @@ async def list_packages(
     ),
     limit: int = Query(100, ge=1, le=1000, description="Макс число записей"),
     offset: int = Query(0, ge=0, description="Смещение для пагинации"),
-    service  = Depends(get_package_service),
+    service: PackageService = Depends(get_package_service),
 ) -> PackageList:
     """
     Список посылок с пагинацией и фильтрацией по типу и наличию shipping_cost.
@@ -64,7 +72,9 @@ async def list_packages(
         limit=limit,
         offset=offset,
     )
-    return PackageList(total=total, items=items)
+    # Конвертируем ORM модели в Pydantic схемы
+    package_reads = [PackageRead.model_validate(item) for item in items]
+    return PackageList(total=total, items=package_reads)
 
 @router.get("/{pkg_id}", response_model=PackageRead)
 async def get_package(
