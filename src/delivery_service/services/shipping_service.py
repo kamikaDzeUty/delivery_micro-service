@@ -1,19 +1,37 @@
-from decimal import Decimal, ROUND_HALF_UP
+from decimal import Decimal
 
-from src.delivery_service.services.rate_service import get_usd_to_rub_rate
+from src.delivery_service.core.config import settings
+from src.delivery_service.services.rate_service import RateService
 
-async def calculate_shipping_cost(
-    weight: Decimal,
-    declared_value: Decimal,
-) -> Decimal:
+class ShippingService:
     """
-    Рассчитывает стоимость доставки в рублях на основе веса и объявленной стоимости.
-    Формула:
-      USD = вес * 0.5 + стоимость * 0.01
-      RUB = USD * курс USD->RUB
-    Возвращает округлённую сумму с точностью до копеек.
+    Сервис, который рассчитывает стоимость доставки.
     """
-    rate = await get_usd_to_rub_rate()
-    cost_usd = weight * Decimal("0.5") + declared_value * Decimal("0.01")
-    cost_rub = cost_usd * Decimal(str(rate))
-    return cost_rub.quantize(Decimal("0.01"), rounding=ROUND_HALF_UP)
+
+    def __init__(self, rate_service: RateService):
+        self._rate = rate_service
+
+    async def calculate_shipping_cost(
+        self,
+        weight_kg: Decimal,
+        declared_value_usd: Decimal,
+    ) -> Decimal:
+        """
+        Формула расчёта:
+          стоимость = weight_kg * rate * settings.weight_coefficient
+                    + declared_value_usd * rate * settings.value_coefficient
+        """
+        rate = await self._rate.get_usd_to_rub_rate()
+
+        weight_cost = (
+            weight_kg
+            * rate
+            * Decimal(settings.weight_coefficient)
+        )
+        value_cost = (
+            declared_value_usd
+            * rate
+            * Decimal(settings.value_coefficient)
+        )
+        total = weight_cost + value_cost
+        return total.quantize(Decimal("0.01"))

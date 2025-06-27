@@ -15,10 +15,6 @@ from src.delivery_service.repositories.package_repository import PackageReposito
     max_retries=3,
 )
 def recalc_shipping_cost(package_id: str) -> None:
-    """
-    Celery-таск под pre-fork пул (production-ready).
-    На каждый вызов создаётся свой event-loop через asyncio.run().
-    """
     from src.delivery_service.services.package_service import PackageService
     async def _inner(pkg_uuid: UUID):
         async with async_session() as session:

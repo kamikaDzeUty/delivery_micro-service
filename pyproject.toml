@@ -34,7 +34,13 @@ ruff = "^0.11.13"
 black = "^25.1.0"
 isort = "^6.0.1"
 pre-commit = "^4.2.0"
+pytest-asyncio = "^1.0.0"
+pytest-mock = "^3.14.1"
 
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+addopts = "-ra"

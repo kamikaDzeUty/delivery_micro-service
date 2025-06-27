@@ -1,63 +1,66 @@
-# src/delivery_service/services/package_service.py
-import uuid
+from decimal import Decimal
 from typing import Optional, Sequence
-
+from uuid import UUID
 
 from src.delivery_service.models.package import Package
 from src.delivery_service.repositories.package_repository import PackageRepository
-from src.delivery_service.schemas.package import PackageCreate
-from src.delivery_service.services.shipping_service import calculate_shipping_cost
+from src.delivery_service.services.shipping_service import ShippingService
+
 
 class PackageService:
-    def __init__(self, repo: PackageRepository):
-        self.repo = repo
+    """
+    Сервисный слой для работы с посылками:
+    – создание,
+    – получение списка,
+    – пересчёт стоимости доставки.
+    """
 
-    async def create_package(self, data: PackageCreate) -> Package:
-        """
-        Создаёт новую посылку с shipping_cost=None.
-        """
-        from src.delivery_service.tasks.recalc import recalc_shipping_cost
-        payload = data.model_dump()
-        pkg = Package(**payload, shipping_cost=None)
-        pkg = await self.repo.create(pkg)
-        recalc_shipping_cost.delay(str(pkg.id))
-        return pkg
+    def __init__(
+        self,
+        repo: PackageRepository,
+        shipping: ShippingService,
+    ):
+        self._repo = repo
+        self._shipping = shipping
 
-    async def get_package(self, pkg_id: uuid.UUID) -> Optional[Package]:
-        """
-        Возвращает одну посылку по UUID или None.
-        """
-        return await self.repo.get(pkg_id)
+    async def create_package(self, pkg: Package) -> Package:
+        # простая передача в репозиторий
+        return await self._repo.create(pkg)
+
+    async def get_package(self, pkg_id: UUID) -> Optional[Package]:
+        return await self._repo.get(pkg_id)
 
     async def list_packages(
         self,
         *,
-        type_id: Optional[uuid.UUID],
-        has_cost: Optional[bool],
-        limit: int,
-        offset: int,
+        type_id: Optional[UUID] = None,
+        has_cost: Optional[bool] = None,
+        limit: int = 100,
+        offset: int = 0,
     ) -> tuple[int, Sequence[Package]]:
-        """
-        Список посылок с фильтрацией и пагинацией.
-        Возвращает (total_count, items).
-        """
-        return await self.repo.list(
+        return await self._repo.list(
             type_id=type_id,
             has_cost=has_cost,
             limit=limit,
             offset=offset,
         )
 
-    async def update_shipping_cost(self, pkg_id: uuid.UUID) -> Optional[Package]:
+    async def update_shipping_cost(self, pkg_id: UUID) -> Optional[Decimal]:
         """
-        Пересчитывает и сохраняет shipping_cost для одной посылки.
+        Пересчитывает и сохраняет shipping_cost у посылки.
+        Возвращает новую стоимость или None, если посылки нет.
         """
-        pkg = await self.repo.get(pkg_id)
+        pkg = await self._repo.get(pkg_id)
         if pkg is None:
             return None
 
-        cost = await calculate_shipping_cost(
-            weight=pkg.weight,
-            declared_value=pkg.declared_value,
+        cost = await self._shipping.calculate_shipping_cost(
+            weight_kg=pkg.weight,
+            declared_value_usd=pkg.declared_value,
         )
-        return await self.repo.update(pkg_id, {"shipping_cost": cost})
+        # сохраняем только одно поле
+        updated = await self._repo.update(
+            pkg_id,
+            {"shipping_cost": cost},
+        )
+        return getattr(updated, "shipping_cost", None)

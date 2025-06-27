@@ -1,5 +1,5 @@
 # src/delivery_service/core/config.py
-from pydantic import  RedisDsn, HttpUrl, ValidationError
+from pydantic import  RedisDsn, ValidationError
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
