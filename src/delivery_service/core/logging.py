@@ -162,13 +162,13 @@ class RequestLoggingMiddleware:
             # Логируем входящий запрос
             method = scope["method"]
             path = scope["path"]
-            self.logger.info(f"Request: {method} {path}")
+            self.logger.info(f"Запрос: {method} {path}")
             
             # Создаем кастомный send для логирования ответа
             async def custom_send(message):
                 if message["type"] == "http.response.start":
                     status_code = message["status"]
-                    self.logger.info(f"Response: {method} {path} - {status_code}")
+                    self.logger.info(f"Ответ: {method} {path} - {status_code}")
                 await send(message)
             
             await self.app(scope, receive, custom_send)
@@ -188,23 +188,23 @@ def log_function_call(logger_name: Optional[str] = None):
         logger = get_logger(logger_name or f"{func.__module__}.{func.__qualname__}")
         
         async def async_wrapper(*args, **kwargs):
-            logger.debug(f"Calling {func.__name__} with args={args}, kwargs={kwargs}")
+            logger.debug(f"Вызов {func.__name__} с аргументами args={args}, kwargs={kwargs}")
             try:
                 result = await func(*args, **kwargs)
-                logger.debug(f"{func.__name__} completed successfully")
+                logger.debug(f"{func.__name__} успешно завершен")
                 return result
             except Exception as e:
-                logger.error(f"{func.__name__} failed with error: {e}")
+                logger.error(f"{func.__name__} завершился с ошибкой: {e}")
                 raise
         
         def sync_wrapper(*args, **kwargs):
-            logger.debug(f"Calling {func.__name__} with args={args}, kwargs={kwargs}")
+            logger.debug(f"Вызов {func.__name__} с аргументами args={args}, kwargs={kwargs}")
             try:
                 result = func(*args, **kwargs)
-                logger.debug(f"{func.__name__} completed successfully")
+                logger.debug(f"{func.__name__} успешно завершен")
                 return result
             except Exception as e:
-                logger.error(f"{func.__name__} failed with error: {e}")
+                logger.error(f"{func.__name__} завершился с ошибкой: {e}")
                 raise
         
         if asyncio.iscoroutinefunction(func):

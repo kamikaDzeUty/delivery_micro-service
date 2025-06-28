@@ -22,21 +22,19 @@ class PackageBase(BaseModel):
         ..., 
         ge=0, 
         le=1000000,
-        description="Объявленная стоимость в USD (0-1,000,000 USD)"
+        description="Объявленная стоимость в USD (0-1_000_000 USD)"
     )
     type_id: UUID = Field(..., description="ID типа посылки")
 
     @field_validator('name')
-    @classmethod
-    def validate_name(cls, v: str) -> str:
+    def validate_name(self, v: str) -> str:
         """Валидация названия посылки"""
         if not v or not v.strip():
             raise ValueError('Название посылки не может быть пустым')
         return v.strip()
 
     @field_validator('weight')
-    @classmethod
-    def validate_weight(cls, v: Decimal) -> Decimal:
+    def validate_weight(self, v: Decimal) -> Decimal:
         """Валидация веса посылки"""
         if v <= 0:
             raise ValueError('Вес посылки должен быть больше 0')
@@ -45,13 +43,12 @@ class PackageBase(BaseModel):
         return v
 
     @field_validator('declared_value')
-    @classmethod
-    def validate_declared_value(cls, v: Decimal) -> Decimal:
+    def validate_declared_value(self, v: Decimal) -> Decimal:
         """Валидация объявленной стоимости"""
         if v < 0:
             raise ValueError('Объявленная стоимость не может быть отрицательной')
         if v > 1000000:
-            raise ValueError('Объявленная стоимость не может превышать 1,000,000 USD')
+            raise ValueError('Объявленная стоимость не может превышать 1_000_000 USD')
         return v
 
 

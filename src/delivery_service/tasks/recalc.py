@@ -1,6 +1,5 @@
 # src/delivery_service/tasks/recalc.py
 import asyncio
-import logging
 from uuid import UUID
 from typing import List
 
@@ -31,16 +30,16 @@ def recalc_shipping_cost(self, package_id: str) -> dict:
     """
     try:
         pkg_uuid = UUID(package_id)
-        logger.info(f"Starting shipping cost recalculation for package {pkg_uuid}")
+        logger.info(f"Начало пересчета стоимости доставки для посылки {pkg_uuid}")
         
         # Запускаем асинхронную функцию в синхронном контексте
         result = asyncio.run(_recalc_shipping_cost_async(pkg_uuid))
         
         if result is None:
-            logger.warning(f"Package {pkg_uuid} not found")
+            logger.warning(f"Посылка {pkg_uuid} не найдена")
             return {"status": "not_found", "package_id": package_id}
         
-        logger.info(f"Successfully recalculated shipping cost for package {pkg_uuid}: {result.shipping_cost}")
+        logger.info(f"Стоимость доставки успешно пересчитана для посылки {pkg_uuid}: {result.shipping_cost}")
         return {
             "status": "success", 
             "package_id": package_id,
@@ -48,10 +47,10 @@ def recalc_shipping_cost(self, package_id: str) -> dict:
         }
         
     except ValueError as e:
-        logger.error(f"Invalid package ID format: {package_id}")
+        logger.error(f"Некорректный формат ID посылки: {package_id}")
         raise self.retry(countdown=60, max_retries=2)
     except Exception as e:
-        logger.error(f"Error recalculating shipping cost for package {package_id}: {e}")
+        logger.error(f"Ошибка при пересчете стоимости доставки для посылки {package_id}: {e}")
         raise self.retry(countdown=120, max_retries=3)
 
 
@@ -67,7 +66,7 @@ def bulk_recalc_shipping_cost(self, package_ids: List[str]) -> dict:
     """
     Пересчитывает стоимость доставки для нескольких посылок.
     """
-    logger.info(f"Starting bulk recalculation for {len(package_ids)} packages")
+    logger.info(f"Начало массового пересчета для {len(package_ids)} посылок")
     
     results = {
         "total": len(package_ids),
@@ -85,22 +84,22 @@ def bulk_recalc_shipping_cost(self, package_ids: List[str]) -> dict:
             
             if result["status"] == "success":
                 results["successful"] += 1
-                logger.debug(f"Package {package_id} processed successfully")
+                logger.debug(f"Посылка {package_id} успешно обработана")
             elif result["status"] == "not_found":
                 results["not_found"] += 1
-                logger.warning(f"Package {package_id} not found")
+                logger.warning(f"Посылка {package_id} не найдена")
             else:
                 results["failed"] += 1
-                error_msg = f"Package {package_id}: {result.get('error', 'Unknown error')}"
+                error_msg = f"Посылка {package_id}: {result.get('error', 'Неизвестная ошибка')}"
                 results["errors"].append(error_msg)
                 logger.error(error_msg)
                 
         except Exception as e:
-            logger.error(f"Error processing package {package_id}: {e}")
+            logger.error(f"Ошибка при обработке посылки {package_id}: {e}")
             results["failed"] += 1
-            results["errors"].append(f"Package {package_id}: {str(e)}")
+            results["errors"].append(f"Посылка {package_id}: {str(e)}")
     
-    logger.info(f"Bulk recalculation completed: {results}")
+    logger.info(f"Массовый пересчет завершен: {results}")
     return results
 
 
@@ -108,7 +107,7 @@ async def _recalc_shipping_cost_async(pkg_uuid: UUID):
     """
     Асинхронная функция для пересчета стоимости доставки.
     """
-    logger.debug(f"Starting async recalculation for package {pkg_uuid}")
+    logger.debug(f"Начало асинхронного пересчета для посылки {pkg_uuid}")
     
     async with async_session() as session:
         # Создаем все необходимые зависимости
@@ -132,9 +131,9 @@ async def _recalc_shipping_cost_async(pkg_uuid: UUID):
                 package_service = PackageService(repo, shipping_service)
                 
                 # Выполняем пересчет
-                logger.debug(f"Calling update_shipping_cost for package {pkg_uuid}")
+                logger.debug(f"Вызов update_shipping_cost для посылки {pkg_uuid}")
                 result = await package_service.update_shipping_cost(pkg_uuid)
-                logger.debug(f"Update completed for package {pkg_uuid}: {result}")
+                logger.debug(f"Обновление завершено для посылки {pkg_uuid}: {result}")
                 return result
             finally:
                 await redis_client.close()

@@ -24,7 +24,6 @@ class PackageTypeCreate(BaseModel):
     )
 
     @field_validator('name')
-    @classmethod
     def validate_name(cls, v: str) -> str:
         """Валидация названия типа посылки"""
         if not v or not v.strip():

@@ -2,7 +2,6 @@ from typing import Optional
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Path, Body
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.delivery_service.core.dependencies import get_package_service
 from src.delivery_service.services.package_service import PackageService
@@ -25,15 +24,15 @@ async def create_package(
     """
     Регистрирует новую посылку и автоматически запускает расчет стоимости через Celery.
     """
-    logger.info(f"Creating package: {payload.name} (weight: {payload.weight}kg, value: ${payload.declared_value})")
+    logger.info(f"Создание посылки: {payload.name} (вес: {payload.weight}кг, стоимость: ${payload.declared_value})")
     
     try:
         pkg = await service.create_package(payload)
-        logger.info(f"Package created successfully: {pkg.id}")
+        logger.info(f"Посылка успешно создана: {pkg.id}")
         return PackageRead.model_validate(pkg)
     except Exception as e:
-        logger.error(f"Failed to create package: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logger.error(f"Ошибка при создании посылки: {e}")
+        raise HTTPException(status_code=500, detail="Внутренняя ошибка сервера")
 
 @router.post("/{pkg_id}/calculate", response_model=PackageRead)
 async def calculate_shipping_cost(
@@ -43,21 +42,21 @@ async def calculate_shipping_cost(
     """
     Запускает расчёт стоимости для одной посылки (синхронно).
     """
-    logger.info(f"Calculating shipping cost for package: {pkg_id}")
+    logger.info(f"Расчет стоимости доставки для посылки: {pkg_id}")
     
     try:
         pkg = await service.update_shipping_cost(pkg_id)
         if pkg is None:
-            logger.warning(f"Package not found for calculation: {pkg_id}")
-            raise HTTPException(status_code=404, detail="Package not found")
+            logger.warning(f"Посылка не найдена для расчета: {pkg_id}")
+            raise HTTPException(status_code=404, detail="Посылка не найдена")
         
-        logger.info(f"Shipping cost calculated successfully for package {pkg_id}: {pkg.shipping_cost}")
+        logger.info(f"Стоимость доставки успешно рассчитана для посылки {pkg_id}: {pkg.shipping_cost}")
         return PackageRead.model_validate(pkg)
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to calculate shipping cost for package {pkg_id}: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logger.error(f"Ошибка при расчете стоимости доставки для посылки {pkg_id}: {e}")
+        raise HTTPException(status_code=500, detail="Внутренняя ошибка сервера")
 
 @router.post("/recalculate-pending")
 async def recalculate_all_pending_packages(
@@ -66,18 +65,18 @@ async def recalculate_all_pending_packages(
     """
     Запускает пересчет стоимости для всех посылок без shipping_cost через Celery.
     """
-    logger.info("Starting bulk recalculation of pending packages")
+    logger.info("Запуск массового пересчета ожидающих посылок")
     
     try:
         tasks_sent = await service.recalculate_all_pending()
-        logger.info(f"Bulk recalculation completed: {tasks_sent} tasks scheduled")
+        logger.info(f"Массовый пересчет завершен: запланировано {tasks_sent} задач")
         return {
-            "message": f"Scheduled {tasks_sent} tasks for recalculation",
+            "message": f"Запланировано {tasks_sent} задач для пересчета",
             "tasks_sent": tasks_sent
         }
     except Exception as e:
-        logger.error(f"Failed to start bulk recalculation: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logger.error(f"Ошибка при запуске массового пересчета: {e}")
+        raise HTTPException(status_code=500, detail="Внутренняя ошибка сервера")
 
 @router.get("/", response_model=PackageList)
 async def list_packages(
@@ -94,7 +93,7 @@ async def list_packages(
     """
     Список посылок с пагинацией и фильтрацией по типу и наличию shipping_cost.
     """
-    logger.info(f"Listing packages: type_id={type_id}, calculated={calculated}, limit={limit}, offset={offset}")
+    logger.info(f"Получение списка посылок: type_id={type_id}, calculated={calculated}, limit={limit}, offset={offset}")
     
     try:
         total, items = await service.list_packages(
@@ -107,11 +106,11 @@ async def list_packages(
         # Конвертируем ORM модели в Pydantic схемы
         package_reads = [PackageRead.model_validate(item) for item in items]
         
-        logger.info(f"Retrieved {len(package_reads)} packages out of {total} total")
+        logger.info(f"Получено {len(package_reads)} посылок из {total} всего")
         return PackageList(total=total, items=package_reads)
     except Exception as e:
-        logger.error(f"Failed to list packages: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logger.error(f"Ошибка при получении списка посылок: {e}")
+        raise HTTPException(status_code=500, detail="Внутренняя ошибка сервера")
 
 @router.get("/{pkg_id}", response_model=PackageRead)
 async def get_package(
@@ -121,18 +120,18 @@ async def get_package(
     """
     Полные данные по одной посылке.
     """
-    logger.info(f"Getting package details: {pkg_id}")
+    logger.info(f"Получение деталей посылки: {pkg_id}")
     
     try:
         pkg = await service.get_package(pkg_id)
         if pkg is None:
-            logger.warning(f"Package not found: {pkg_id}")
-            raise HTTPException(status_code=404, detail="Package not found")
+            logger.warning(f"Посылка не найдена: {pkg_id}")
+            raise HTTPException(status_code=404, detail="Посылка не найдена")
         
-        logger.info(f"Package retrieved successfully: {pkg_id}")
+        logger.info(f"Посылка успешно получена: {pkg_id}")
         return PackageRead.model_validate(pkg)
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Failed to get package {pkg_id}: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logger.error(f"Ошибка при получении посылки {pkg_id}: {e}")
+        raise HTTPException(status_code=500, detail="Внутренняя ошибка сервера")

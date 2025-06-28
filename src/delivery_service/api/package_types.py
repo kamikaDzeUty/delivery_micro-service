@@ -1,9 +1,7 @@
-from typing import List, Sequence
+from typing import List
 from fastapi import APIRouter, Depends, HTTPException, Body
-from sqlalchemy.ext.asyncio import AsyncSession
 
 from src.delivery_service.core.dependencies import get_package_type_repository
-from src.delivery_service.models import PackageType
 from src.delivery_service.repositories.package_type_repository import PackageTypeRepository
 from src.delivery_service.schemas.package_type import PackageTypeRead, PackageTypeCreate
 from src.delivery_service.core.logging import get_logger
@@ -19,15 +17,15 @@ async def list_package_types(
     """
     Возвращает весь справочник типов посылок.
     """
-    logger.info("Listing all package types")
+    logger.info("Получение всех типов посылок")
     
     try:
         package_types = await repo.list()
-        logger.info(f"Retrieved {len(package_types)} package types")
+        logger.info(f"Получено {len(package_types)} типов посылок")
         return [PackageTypeRead.model_validate(pt) for pt in package_types]
     except Exception as e:
-        logger.error(f"Failed to list package types: {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logger.error(f"Ошибка при получении типов посылок: {e}")
+        raise HTTPException(status_code=500, detail="Внутренняя ошибка сервера")
 
 @router.post("/", response_model=PackageTypeRead)
 async def create_package_type(
@@ -37,15 +35,15 @@ async def create_package_type(
     """
     Создает новый тип посылки.
     """
-    logger.info(f"Creating new package type: {payload.name}")
+    logger.info(f"Создание нового типа посылки: {payload.name}")
     
     try:
         package_type = await repo.create(payload.name)
-        logger.info(f"Package type created successfully: {package_type.id} - {package_type.name}")
+        logger.info(f"Тип посылки успешно создан: {package_type.id} - {package_type.name}")
         return PackageTypeRead.model_validate(package_type)
     except Exception as e:
-        logger.error(f"Failed to create package type '{payload.name}': {e}")
-        raise HTTPException(status_code=500, detail="Internal server error")
+        logger.error(f"Ошибка при создании типа посылки '{payload.name}': {e}")
+        raise HTTPException(status_code=500, detail="Внутренняя ошибка сервера")
 
 
 

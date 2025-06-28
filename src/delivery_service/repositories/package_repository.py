@@ -30,12 +30,12 @@ class PackageRepository:
             pkg_with_type = result.scalar_one_or_none()
 
             if pkg_with_type is None:
-                raise RuntimeError(f"Package with id {pkg.id} not found after insert")
+                raise RuntimeError(f"Посылка с id {pkg.id} не найдена после вставки")
 
             return pkg_with_type
         except SQLAlchemyError as e:
             await self.session.rollback()
-            raise RuntimeError(f"Database error while creating package: {e}")
+            raise RuntimeError(f"Ошибка базы данных при создании посылки: {e}")
 
     async def get(self, pkg_id: UUID) -> Optional[Package]:
         """
@@ -50,7 +50,7 @@ class PackageRepository:
             result = await self.session.execute(stmt)
             return result.scalar_one_or_none()
         except SQLAlchemyError as e:
-            raise RuntimeError(f"Database error while getting package {pkg_id}: {e}")
+            raise RuntimeError(f"Ошибка базы данных при получении посылки {pkg_id}: {e}")
 
     async def list(
         self,
@@ -88,7 +88,7 @@ class PackageRepository:
 
             return total, items
         except SQLAlchemyError as e:
-            raise RuntimeError(f"Database error while listing packages: {e}")
+            raise RuntimeError(f"Ошибка базы данных при получении списка посылок: {e}")
 
     async def update(self, pkg_id: UUID, pkg_data: dict[str, Any]) -> Optional[Package]:
         """
@@ -104,14 +104,14 @@ class PackageRepository:
                 if hasattr(pkg, field):
                     setattr(pkg, field, value)
                 else:
-                    raise ValueError(f"Invalid field '{field}' for Package model")
+                    raise ValueError(f"Некорректное поле '{field}' для модели Package")
                 
             await self.session.commit()
             await self.session.refresh(pkg)
             return pkg
         except SQLAlchemyError as e:
             await self.session.rollback()
-            raise RuntimeError(f"Database error while updating package {pkg_id}: {e}")
+            raise RuntimeError(f"Ошибка базы данных при обновлении посылки {pkg_id}: {e}")
 
     async def delete(self, pkg_id: UUID) -> bool:
         """
@@ -128,4 +128,4 @@ class PackageRepository:
             return True
         except SQLAlchemyError as e:
             await self.session.rollback()
-            raise RuntimeError(f"Database error while deleting package {pkg_id}: {e}")
+            raise RuntimeError(f"Ошибка базы данных при удалении посылки {pkg_id}: {e}")

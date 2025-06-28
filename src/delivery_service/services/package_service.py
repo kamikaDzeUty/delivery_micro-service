@@ -31,13 +31,13 @@ class PackageService:
         """
         Создает новую посылку из Pydantic схемы и запускает автоматический расчет стоимости.
         """
-        logger.info(f"Creating new package: {payload.name}")
+        logger.info(f"Создание новой посылки: {payload.name}")
         
         # Конвертируем Pydantic схему в ORM модель
         pkg = Package(**payload.model_dump())
         created_pkg = await self._repo.create(pkg)
         
-        logger.info(f"Package created successfully with ID: {created_pkg.id}")
+        logger.info(f"Посылка успешно создана с ID: {created_pkg.id}")
         
         # Запускаем асинхронный расчет стоимости через Celery
         self._schedule_shipping_calculation(created_pkg.id)
@@ -55,12 +55,12 @@ class PackageService:
                 args=[str(package_id)],
                 countdown=5,  # Задержка 5 секунд перед выполнением
             )
-            logger.info(f"Task scheduled for package {package_id}: {task.id}")
+            logger.info(f"Задача запланирована для посылки {package_id}: {task.id}")
         except Exception as e:
-            logger.error(f"Failed to schedule task for package {package_id}: {e}")
+            logger.error(f"Ошибка при планировании задачи для посылки {package_id}: {e}")
 
     async def get_package(self, pkg_id: UUID) -> Optional[Package]:
-        logger.debug(f"Getting package with ID: {pkg_id}")
+        logger.debug(f"Получение посылки с ID: {pkg_id}")
         return await self._repo.get(pkg_id)
 
     async def list_packages(
@@ -71,7 +71,7 @@ class PackageService:
         limit: int = 100,
         offset: int = 0,
     ) -> tuple[int, Sequence[Package]]:
-        logger.debug(f"Listing packages: type_id={type_id}, has_cost={has_cost}, limit={limit}, offset={offset}")
+        logger.debug(f"Получение списка посылок: type_id={type_id}, has_cost={has_cost}, limit={limit}, offset={offset}")
         return await self._repo.list(
             type_id=type_id,
             has_cost=has_cost,
@@ -84,11 +84,11 @@ class PackageService:
         Пересчитывает и сохраняет shipping_cost у посылки.
         Возвращает обновленную посылку или None, если посылки нет.
         """
-        logger.info(f"Updating shipping cost for package: {pkg_id}")
+        logger.info(f"Обновление стоимости доставки для посылки: {pkg_id}")
         
         pkg = await self._repo.get(pkg_id)
         if pkg is None:
-            logger.warning(f"Package not found: {pkg_id}")
+            logger.warning(f"Посылка не найдена: {pkg_id}")
             return None
 
         cost = await self._shipping.calculate_shipping_cost(
@@ -96,9 +96,8 @@ class PackageService:
             declared_value_usd=pkg.declared_value,
         )
         
-        logger.info(f"Calculated shipping cost for package {pkg_id}: {cost}")
-        
-        # Сохраняем обновленную посылку
+        logger.info(f"Стоимость доставки рассчитана для посылки {pkg_id}: {cost}")
+
         updated = await self._repo.update(
             pkg_id,
             {"shipping_cost": cost},
@@ -110,11 +109,11 @@ class PackageService:
         Пересчитывает стоимость для всех посылок без shipping_cost.
         Возвращает количество отправленных задач.
         """
-        logger.info("Starting bulk recalculation of pending packages")
+        logger.info("Запуск массового пересчета ожидающих посылок")
         
         total, packages = await self._repo.list(has_cost=False, limit=1000)
         
-        logger.info(f"Found {total} packages without shipping cost")
+        logger.info(f"Найдено {total} посылок без стоимости доставки")
         
         tasks_sent = 0
         for package in packages:
@@ -122,7 +121,7 @@ class PackageService:
                 self._schedule_shipping_calculation(package.id)
                 tasks_sent += 1
             except Exception as e:
-                logger.error(f"Failed to schedule task for package {package.id}: {e}")
+                logger.error(f"Ошибка при планировании задачи для посылки {package.id}: {e}")
         
-        logger.info(f"Successfully scheduled {tasks_sent} tasks for recalculation")
+        logger.info(f"Успешно запланировано {tasks_sent} задач для пересчета")
         return tasks_sent

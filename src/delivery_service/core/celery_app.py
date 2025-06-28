@@ -24,9 +24,9 @@ celery_app.conf.update(
     worker_concurrency=settings.celery_worker_concurrency,
 )
 
-# Дополнительные production настройки
+# Дополнительные настройки
 celery_app.conf.update(
-    task_always_eager=False,  # В продакшене False
+    task_always_eager=False,
     task_eager_propagates=True,
     task_ignore_result=False,
     task_store_errors_even_if_ignored=True,
@@ -34,10 +34,10 @@ celery_app.conf.update(
     worker_send_task_events=True,
     task_send_sent_event=True,
     event_queue_expires=60.0,
-    worker_state_db=None,  # Отключаем для простоты
-    result_expires=3600,  # 1 час
-    task_soft_time_limit=300,  # 5 минут
-    task_time_limit=600,  # 10 минут
+    worker_state_db=None,
+    result_expires=3600,
+    task_soft_time_limit=300,
+    task_time_limit=600,
 )
 
 # Настройки для мониторинга
