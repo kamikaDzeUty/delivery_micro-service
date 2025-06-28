@@ -1,0 +1,46 @@
+[tool.poetry]
+name = "delivery-micro-service"
+version = "0.1.0"
+description = ""
+authors = ["kamikaDzeUty <2ivan03112004@mail.ru>"]
+readme = "README.md"
+packages = [
+  { include = "delivery_service", from = "src" }
+]
+
+[tool.poetry.scripts]
+start = "delivery_service.main:app"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+fastapi = "^0.115.12"
+sqlalchemy = "^2.0.41"
+asyncpg = "^0.30.0"
+pydantic = "^2.0"
+aio-pika = "^9.5.5"
+alembic = "^1.16.1"
+redis = "^6.2.0"
+uvicorn = "^0.34.3"
+poetry-core = "^2.1.3"
+pydantic-settings = "^2.10.0"
+aiohttp = "^3.12.13"
+celery = "^5.5.3"
+asgiref = "^3.8.1"
+
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.4.0"
+ruff = "^0.11.13"
+black = "^25.1.0"
+isort = "^6.0.1"
+pre-commit = "^4.2.0"
+pytest-asyncio = "^1.0.0"
+pytest-mock = "^3.14.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+addopts = "-ra"
