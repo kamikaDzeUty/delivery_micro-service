@@ -182,25 +182,6 @@ celery -A src.delivery_service.core.celery_app.celery_app worker --loglevel=info
 - **ID типа**: валидный UUID
 - **Название типа**: `min_length=1, max_length=50`
 
-#### Кастомные валидаторы
-```python
-@field_validator('name')
-@classmethod
-def validate_name(cls, v: str) -> str:
-    """Валидация названия посылки"""
-    if not v or not v.strip():
-        raise ValueError('Название посылки не может быть пустым')
-    return v.strip()
-```
-
-### Особенности Pydantic v2
-
-- **@field_validator** вместо устаревшего @validator
-- **@classmethod** декоратор обязателен
-- **Типизация** параметров и возвращаемых значений
-- **Field** валидаторы для базовых ограничений
-- **Кастомные валидаторы** для сложной бизнес-логики
-
 ## Логирование
 
 ### Структура логов
@@ -226,32 +207,6 @@ logs/
 - **Console**: Краткий формат для разработки
 - **File**: Детальный формат с временными метками и контекстом
 - **JSON**: Структурированный формат для анализа
-
-### Примеры логов
-
-```bash
-# Создание посылки
-2024-01-15 10:30:15 - src.delivery_service.api.packages - INFO - Creating package: Электроника (weight: 2.5kg, value: $500.00)
-2024-01-15 10:30:15 - src.delivery_service.services.package_service - INFO - Package created successfully: 123e4567-e89b-12d3-a456-426614174000
-
-# Расчет стоимости
-2024-01-15 10:30:20 - src.delivery_service.tasks.recalc - INFO - Starting shipping cost recalculation for package 123e4567-e89b-12d3-a456-426614174000
-2024-01-15 10:30:21 - src.delivery_service.services.rate_service - INFO - Received rate from CBR: 95.45
-2024-01-15 10:30:21 - src.delivery_service.services.package_service - INFO - Calculated shipping cost for package 123e4567-e89b-12d3-a456-426614174000: 7500.50
-```
-
-### Мониторинг логов
-
-```bash
-# Просмотр логов в реальном времени
-tail -f logs/app.log
-
-# Поиск ошибок
-grep "ERROR" logs/error.log
-
-# Анализ производительности
-grep "shipping cost" logs/app.log | awk '{print $1, $2, $NF}'
-```
 
 ## Celery задачи
 
