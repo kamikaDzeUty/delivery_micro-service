@@ -37,3 +37,7 @@ alembic/versions/*.py
 # Migrations (если решим не хранить версии в репо, а только через CI)
 migrations/
 
+# Logs
+logs/
+*.log
+

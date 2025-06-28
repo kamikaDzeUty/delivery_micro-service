@@ -11,8 +11,9 @@ from src.delivery_service.repositories.package_repository import PackageReposito
 from src.delivery_service.services.rate_service import RateService
 from src.delivery_service.services.shipping_service import ShippingService
 from src.delivery_service.services.package_service import PackageService
+from src.delivery_service.core.logging import get_logger
 
-logger = logging.getLogger(__name__)
+logger = get_logger(__name__)
 
 
 @celery_app.task(
@@ -84,11 +85,15 @@ def bulk_recalc_shipping_cost(self, package_ids: List[str]) -> dict:
             
             if result["status"] == "success":
                 results["successful"] += 1
+                logger.debug(f"Package {package_id} processed successfully")
             elif result["status"] == "not_found":
                 results["not_found"] += 1
+                logger.warning(f"Package {package_id} not found")
             else:
                 results["failed"] += 1
-                results["errors"].append(f"Package {package_id}: {result.get('error', 'Unknown error')}")
+                error_msg = f"Package {package_id}: {result.get('error', 'Unknown error')}"
+                results["errors"].append(error_msg)
+                logger.error(error_msg)
                 
         except Exception as e:
             logger.error(f"Error processing package {package_id}: {e}")
@@ -103,6 +108,8 @@ async def _recalc_shipping_cost_async(pkg_uuid: UUID):
     """
     Асинхронная функция для пересчета стоимости доставки.
     """
+    logger.debug(f"Starting async recalculation for package {pkg_uuid}")
+    
     async with async_session() as session:
         # Создаем все необходимые зависимости
         repo = PackageRepository(session)
@@ -125,6 +132,9 @@ async def _recalc_shipping_cost_async(pkg_uuid: UUID):
                 package_service = PackageService(repo, shipping_service)
                 
                 # Выполняем пересчет
-                return await package_service.update_shipping_cost(pkg_uuid)
+                logger.debug(f"Calling update_shipping_cost for package {pkg_uuid}")
+                result = await package_service.update_shipping_cost(pkg_uuid)
+                logger.debug(f"Update completed for package {pkg_uuid}: {result}")
+                return result
             finally:
                 await redis_client.close()
