@@ -1,4 +1,3 @@
-from decimal import Decimal
 from typing import Optional, Sequence
 from uuid import UUID
 
@@ -10,6 +9,7 @@ from src.delivery_service.core.celery_app import celery_app
 from src.delivery_service.core.logging import get_logger
 
 logger = get_logger(__name__)
+
 
 class PackageService:
     """
@@ -32,16 +32,16 @@ class PackageService:
         Создает новую посылку из Pydantic схемы и запускает автоматический расчет стоимости.
         """
         logger.info(f"Создание новой посылки: {payload.name}")
-        
+
         # Конвертируем Pydantic схему в ORM модель
         pkg = Package(**payload.model_dump())
         created_pkg = await self._repo.create(pkg)
-        
+
         logger.info(f"Посылка успешно создана с ID: {created_pkg.id}")
-        
+
         # Запускаем асинхронный расчет стоимости через Celery
         self._schedule_shipping_calculation(created_pkg.id)
-        
+
         return created_pkg
 
     def _schedule_shipping_calculation(self, package_id: UUID) -> None:
@@ -51,13 +51,15 @@ class PackageService:
         try:
             # Отправляем задачу в очередь
             task = celery_app.send_task(
-                'delivery_service.recalc_shipping_cost',
+                "delivery_service.recalc_shipping_cost",
                 args=[str(package_id)],
                 countdown=5,  # Задержка 5 секунд перед выполнением
             )
             logger.info(f"Задача запланирована для посылки {package_id}: {task.id}")
         except Exception as e:
-            logger.error(f"Ошибка при планировании задачи для посылки {package_id}: {e}")
+            logger.error(
+                f"Ошибка при планировании задачи для посылки {package_id}: {e}"
+            )
 
     async def get_package(self, pkg_id: UUID) -> Optional[Package]:
         logger.debug(f"Получение посылки с ID: {pkg_id}")
@@ -71,7 +73,9 @@ class PackageService:
         limit: int = 100,
         offset: int = 0,
     ) -> tuple[int, Sequence[Package]]:
-        logger.debug(f"Получение списка посылок: type_id={type_id}, has_cost={has_cost}, limit={limit}, offset={offset}")
+        logger.debug(
+            f"Получение списка посылок: type_id={type_id}, has_cost={has_cost}, limit={limit}, offset={offset}"
+        )
         return await self._repo.list(
             type_id=type_id,
             has_cost=has_cost,
@@ -85,7 +89,7 @@ class PackageService:
         Возвращает обновленную посылку или None, если посылки нет.
         """
         logger.info(f"Обновление стоимости доставки для посылки: {pkg_id}")
-        
+
         pkg = await self._repo.get(pkg_id)
         if pkg is None:
             logger.warning(f"Посылка не найдена: {pkg_id}")
@@ -95,7 +99,7 @@ class PackageService:
             weight_kg=pkg.weight,
             declared_value_usd=pkg.declared_value,
         )
-        
+
         logger.info(f"Стоимость доставки рассчитана для посылки {pkg_id}: {cost}")
 
         updated = await self._repo.update(
@@ -110,18 +114,20 @@ class PackageService:
         Возвращает количество отправленных задач.
         """
         logger.info("Запуск массового пересчета ожидающих посылок")
-        
+
         total, packages = await self._repo.list(has_cost=False, limit=1000)
-        
+
         logger.info(f"Найдено {total} посылок без стоимости доставки")
-        
+
         tasks_sent = 0
         for package in packages:
             try:
                 self._schedule_shipping_calculation(package.id)
                 tasks_sent += 1
             except Exception as e:
-                logger.error(f"Ошибка при планировании задачи для посылки {package.id}: {e}")
-        
+                logger.error(
+                    f"Ошибка при планировании задачи для посылки {package.id}: {e}"
+                )
+
         logger.info(f"Успешно запланировано {tasks_sent} задач для пересчета")
         return tasks_sent

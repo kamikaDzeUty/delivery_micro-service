@@ -1,29 +1,29 @@
-# src/delivery_service/core/config.py
 from pydantic import ValidationError
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
 
 class Settings(BaseSettings):
     # Database
     database_url: str
-    
+
     # Redis
     redis_url: str
-    
+
     # External APIs
     cbr_api_url: str = "https://www.cbr-xml-daily.ru/daily_json.js"
-    
+
     # Business logic coefficients
     weight_coefficient: float = 1.0
     value_coefficient: float = 0.1
     rate_ttl_seconds: int = 3600  # 1 hour
-    
+
     # Message queue
     rabbitmq_url: str
-    
+
     # HTTP client settings
     http_timeout: int = 30
     http_max_retries: int = 3
-    
+
     # Celery settings
     celery_broker_url: str
     celery_result_backend: str | None = None
@@ -38,11 +38,9 @@ class Settings(BaseSettings):
     celery_worker_concurrency: int = 4
 
     model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        extra="ignore",
-        case_sensitive=False
+        env_file=".env", env_file_encoding="utf-8", extra="ignore", case_sensitive=False
     )
+
 
 try:
     settings = Settings()

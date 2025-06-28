@@ -3,9 +3,7 @@ import logging
 import logging.config
 import sys
 from pathlib import Path
-from typing import Dict, Any, Optional
-
-from src.delivery_service.core.config import settings
+from typing import Optional
 
 
 def setup_logging() -> None:
@@ -137,10 +135,10 @@ def setup_logging() -> None:
 def get_logger(name: str) -> logging.Logger:
     """
     Получение логгера с указанным именем.
-    
+
     Args:
         name: Имя логгера (обычно __name__)
-        
+
     Returns:
         Настроенный логгер
     """
@@ -152,25 +150,25 @@ class RequestLoggingMiddleware:
     """
     Middleware для логирования HTTP запросов и ответов.
     """
-    
+
     def __init__(self, app):
         self.app = app
         self.logger = get_logger("src.delivery_service.api.requests")
-    
+
     async def __call__(self, scope, receive, send):
         if scope["type"] == "http":
             # Логируем входящий запрос
             method = scope["method"]
             path = scope["path"]
             self.logger.info(f"Запрос: {method} {path}")
-            
+
             # Создаем кастомный send для логирования ответа
             async def custom_send(message):
                 if message["type"] == "http.response.start":
                     status_code = message["status"]
                     self.logger.info(f"Ответ: {method} {path} - {status_code}")
                 await send(message)
-            
+
             await self.app(scope, receive, custom_send)
         else:
             await self.app(scope, receive, send)
@@ -180,15 +178,18 @@ class RequestLoggingMiddleware:
 def log_function_call(logger_name: Optional[str] = None):
     """
     Декоратор для логирования вызовов функций.
-    
+
     Args:
         logger_name: Имя логгера (если не указано, используется имя модуля)
     """
+
     def decorator(func):
         logger = get_logger(logger_name or f"{func.__module__}.{func.__qualname__}")
-        
+
         async def async_wrapper(*args, **kwargs):
-            logger.debug(f"Вызов {func.__name__} с аргументами args={args}, kwargs={kwargs}")
+            logger.debug(
+                f"Вызов {func.__name__} с аргументами args={args}, kwargs={kwargs}"
+            )
             try:
                 result = await func(*args, **kwargs)
                 logger.debug(f"{func.__name__} успешно завершен")
@@ -196,9 +197,11 @@ def log_function_call(logger_name: Optional[str] = None):
             except Exception as e:
                 logger.error(f"{func.__name__} завершился с ошибкой: {e}")
                 raise
-        
+
         def sync_wrapper(*args, **kwargs):
-            logger.debug(f"Вызов {func.__name__} с аргументами args={args}, kwargs={kwargs}")
+            logger.debug(
+                f"Вызов {func.__name__} с аргументами args={args}, kwargs={kwargs}"
+            )
             try:
                 result = func(*args, **kwargs)
                 logger.debug(f"{func.__name__} успешно завершен")
@@ -206,10 +209,10 @@ def log_function_call(logger_name: Optional[str] = None):
             except Exception as e:
                 logger.error(f"{func.__name__} завершился с ошибкой: {e}")
                 raise
-        
+
         if asyncio.iscoroutinefunction(func):
             return async_wrapper
         else:
             return sync_wrapper
-    
-    return decorator 
+
+    return decorator

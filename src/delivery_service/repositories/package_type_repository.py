@@ -1,10 +1,10 @@
-# src/delivery_service/repositories/package_type_repository.py
 from typing import Sequence
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.exc import SQLAlchemyError
 
 from src.delivery_service.models.package_type import PackageType
+
 
 class PackageTypeRepository:
     def __init__(self, session: AsyncSession):
@@ -18,7 +18,9 @@ class PackageTypeRepository:
             result = await self.session.execute(select(PackageType))
             return result.scalars().all()
         except SQLAlchemyError as e:
-            raise RuntimeError(f"Ошибка базы данных при получении списка типов посылок: {e}")
+            raise RuntimeError(
+                f"Ошибка базы данных при получении списка типов посылок: {e}"
+            )
 
     async def create(self, name: str) -> PackageType:
         """
@@ -32,7 +34,9 @@ class PackageTypeRepository:
             return package_type
         except SQLAlchemyError as e:
             await self.session.rollback()
-            raise RuntimeError(f"Ошибка базы данных при создании типа посылки '{name}': {e}")
+            raise RuntimeError(
+                f"Ошибка базы данных при создании типа посылки '{name}': {e}"
+            )
 
     async def get_by_id(self, type_id: str) -> PackageType | None:
         """
@@ -44,7 +48,9 @@ class PackageTypeRepository:
             )
             return result.scalar_one_or_none()
         except SQLAlchemyError as e:
-            raise RuntimeError(f"Ошибка базы данных при получении типа посылки {type_id}: {e}")
+            raise RuntimeError(
+                f"Ошибка базы данных при получении типа посылки {type_id}: {e}"
+            )
 
     async def get_by_name(self, name: str) -> PackageType | None:
         """
@@ -56,4 +62,6 @@ class PackageTypeRepository:
             )
             return result.scalar_one_or_none()
         except SQLAlchemyError as e:
-            raise RuntimeError(f"Ошибка базы данных при получении типа посылки по имени '{name}': {e}")
+            raise RuntimeError(
+                f"Ошибка базы данных при получении типа посылки по имени '{name}': {e}"
+            )

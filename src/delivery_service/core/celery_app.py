@@ -1,4 +1,3 @@
-# src/delivery_service/core/celery_app.py
 from celery import Celery
 from src.delivery_service.core.config import settings
 
